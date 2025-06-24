@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mayo/screens/onboarding%20_screens/onboarding_screen_2.dart'; // Add this import
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
@@ -6,6 +7,7 @@ class OnboardingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -39,9 +41,15 @@ class OnboardingScreen extends StatelessWidget {
               ElevatedButton(
                 onPressed: () {
                   // Handle next screen navigation
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const OnboardingScreen2(),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
+                  backgroundColor: const Color.fromARGB(255, 96, 5, 161),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
