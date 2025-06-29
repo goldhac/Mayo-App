@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mayo/widgets/feature_card.dart';
 import 'package:mayo/widgets/onboarding_navigation_buttons.dart';
+import 'onboarding_screen_5.dart';
 
 class OnboardingScreen4 extends StatelessWidget {
   const OnboardingScreen4({super.key});
@@ -72,7 +73,7 @@ class OnboardingScreen4 extends StatelessWidget {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const OnboardingScreen4(),
+                      builder: (context) => const OnboardingScreen5(),
                     ));
               },
             )

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "636858241523",
+    "project_id": "mayo-99e63",
+    "storage_bucket": "mayo-99e63.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:636858241523:android:27ec308fd1c42afad34286",
+        "android_client_info": {
+          "package_name": "com.mayo.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjq1jVs6-HHRaPnd1-bAPz1p5hrU37PWU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

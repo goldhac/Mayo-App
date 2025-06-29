@@ -25,25 +25,23 @@ class FeatureCard extends StatelessWidget {
           crossAxisAlignment:
               CrossAxisAlignment.start, // Align top for multi-line text
           children: [
-            Icon(
-              icon,
-              size: 40.0,
-              color: Colors.deepPurple.shade400,
-            ),
-            const SizedBox(width: 12.0),
-            Expanded(
-              // Ensures the text wraps within available space
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16.0, // Increased font size
-                  fontWeight: FontWeight.w600, // Slightly bolder than bold
-                  color: Colors.black,
+                Icon(
+                  icon,
+                  color: Colors.deepPurple.shade400,
+                  size: 30.0,
                 ),
-                softWrap: true,
-                overflow: TextOverflow.visible,
-              ),
-            ),
+                const SizedBox(width: 10.0),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16.0,
+                    ),
+                    softWrap: true,
+                  ),
+                ),
           ],
         ),
       ),
