@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mayo_fixed/widgets/full_width_button.dart';
 import 'package:mayo_fixed/widgets/form_widgets.dart';
+import 'package:mayo_fixed/services/auth_service.dart'; // Import our authentication service
 import 'sign_in_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -14,8 +15,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _isPasswordVisible = false; // Password visibility flag
   bool _isConfirmPasswordVisible = false; // Confirm password visibility flag
   bool _acceptTerms = false; // Terms acceptance flag
+  bool _isLoading = false; // Loading state for sign-up process
 
   final _formKey = GlobalKey<FormState>(); // Form key for validation
+  final AuthService _authService = AuthService(); // Instance of our authentication service
 
   // Controllers for text fields
   final TextEditingController _nameController = TextEditingController();
@@ -79,6 +82,88 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() {
       _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
     });
+  }
+
+  /// Handle user sign-up process
+  /// This method validates the form, calls the authentication service,
+  /// and handles the response (success or error)
+  Future<void> _handleSignUp() async {
+    // Validate all form fields
+    setState(() {
+      _nameError = _nameController.text.isEmpty ? 'Name is required' : null;
+      _emailError = _validateEmail(_emailController.text);
+      _passwordError = _validatePassword(_passwordController.text);
+      _confirmPasswordError = _validateConfirmPassword(_confirmPasswordController.text);
+      _termsError = !_acceptTerms ? 'You must accept the terms and conditions' : null;
+    });
+
+    // Check if all validations pass
+    if (_nameError != null ||
+        _emailError != null ||
+        _passwordError != null ||
+        _confirmPasswordError != null ||
+        _termsError != null) {
+      return;
+    }
+
+    // Show loading state
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Call the authentication service to create a new user account
+      final result = await _authService.signUpWithEmailAndPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+        fullName: _nameController.text,
+      );
+
+      if (mounted) {
+        if (result.success) {
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+
+          // Navigation is handled automatically by AuthWrapper
+          // Firebase Auth automatically signs in the user after successful registration
+          // The StreamBuilder in AuthWrapper will detect this and navigate to HomeScreen
+          
+        } else {
+          // Sign-up failed - show error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Handle any unexpected errors
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('An unexpected error occurred. Please try again.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      // Hide loading state
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -178,29 +263,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                 const SizedBox(height: 24.0),
                 FullWidthButton(
-                  text: 'Sign Up',
-                  onPressed: () {
-                    setState(() {
-                      _nameError = _nameController.text.isEmpty
-                          ? 'Name is required'
-                          : null;
-                      _emailError = _validateEmail(_emailController.text);
-                      _passwordError =
-                          _validatePassword(_passwordController.text);
-                      _confirmPasswordError = _validateConfirmPassword(
-                          _confirmPasswordController.text);
-                      _termsError = !_acceptTerms
-                          ? 'You must accept the terms and conditions'
-                          : null;
-                    });
-
-                    if (_formKey.currentState?.validate() ??
-                        false && _acceptTerms) {
-                      // Handle Sign Up if all fields are valid
-                    }
-                  },
+                  text: _isLoading ? 'Creating Account...' : 'Sign Up', // Show loading text when processing
+                  onPressed: _isLoading ? null : () => _handleSignUp(), // Wrap async function in sync callback
                   color: Colors.deepPurple.shade400,
                 ),
+                
+                // Show loading indicator when signing up
+                if (_isLoading)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 16.0),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.deepPurple),
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 24.0),
                 const Center(
                   child: Text(

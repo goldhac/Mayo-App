@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mayo_fixed/widgets/full_width_button.dart';
 import 'package:mayo_fixed/widgets/form_widgets.dart';
+import 'package:mayo_fixed/services/auth_service.dart'; // Import our authentication service
 import 'sign_up_screen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -12,8 +13,10 @@ class SignInScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignInScreen> {
   bool _isPasswordVisible = false; // Password visibility flag
+  bool _isLoading = false; // Loading state for sign-in process
 
   final _formKey = GlobalKey<FormState>(); // Form key for validation
+  final AuthService _authService = AuthService(); // Instance of our authentication service
 
   // Controllers for text fields
   final TextEditingController _emailController = TextEditingController();
@@ -52,6 +55,158 @@ class _SignInScreenState extends State<SignInScreen> {
     setState(() {
       _isPasswordVisible = !_isPasswordVisible;
     });
+  }
+
+  /// Handle user sign-in process
+  /// This method validates the form, calls the authentication service,
+  /// and handles the response (success or error)
+  Future<void> _handleSignIn() async {
+    // Clear any previous errors
+    setState(() {
+      _emailError = _validateEmail(_emailController.text);
+      _passwordError = _validatePassword(_passwordController.text);
+    });
+
+    // Check if form is valid before proceeding
+    if (_emailError != null || _passwordError != null) {
+      return;
+    }
+
+    // Show loading state
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Call the authentication service to sign in the user
+      final result = await _authService.signInWithEmailAndPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+
+      if (mounted) {
+        if (result.success) {
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          // Navigation is handled automatically by AuthWrapper
+          // The StreamBuilder in AuthWrapper will detect the authentication state change
+          // and navigate to HomeScreen automatically
+          
+        } else {
+          // Sign-in failed - show error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Handle any unexpected errors
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('An unexpected error occurred. Please try again.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      // Hide loading state
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  /// Handle forgot password functionality
+  /// This method shows a dialog to get the user's email and sends a password reset email
+  Future<void> _handleForgotPassword() async {
+    final TextEditingController emailController = TextEditingController();
+    
+    // Show dialog to get user's email for password reset
+    final String? email = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text(
+            'Reset Password',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter your email address to receive a password reset link.',
+                style: TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: emailController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Email address',
+                  hintStyle: const TextStyle(color: Colors.white54),
+                  filled: true,
+                  fillColor: Colors.grey[800],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(emailController.text);
+              },
+              child: const Text(
+                'Send Reset Email',
+                style: TextStyle(color: Colors.deepPurple),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    // If user provided an email, send the password reset email
+    if (email != null && email.isNotEmpty) {
+      final result = await _authService.sendPasswordResetEmail(email);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: result.success ? Colors.green : Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -98,9 +253,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {
-                      // Handle Forgot Password
-                    },
+                    onPressed: _handleForgotPassword, // Call our forgot password handler
                     child: const Text(
                       'Forgot Password?',
                       style: TextStyle(color: Colors.white70),
@@ -109,20 +262,21 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
                 const SizedBox(height: 24.0),
                 FullWidthButton(
-                  text: 'Log In',
-                  onPressed: () {
-                    setState(() {
-                      _emailError = _validateEmail(_emailController.text);
-                      _passwordError =
-                          _validatePassword(_passwordController.text);
-                    });
-
-                    if (_formKey.currentState?.validate() ?? false) {
-                      // Handle Log In if all fields are valid
-                    }
-                  },
+                  text: _isLoading ? 'Signing In...' : 'Log In', // Show loading text when processing
+                  onPressed: _isLoading ? null : () => _handleSignIn(), // Wrap async function in sync callback
                   color: Colors.deepPurple.shade400,
                 ),
+                
+                // Show loading indicator when signing in
+                if (_isLoading)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 16.0),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.deepPurple),
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 24.0),
                 const Center(
                   child: Text(

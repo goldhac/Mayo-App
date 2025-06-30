@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class FullWidthButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed; // Made nullable to handle loading states
   final Color color;
   final Color textColor;
 
