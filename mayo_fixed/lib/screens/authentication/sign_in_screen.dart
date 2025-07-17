@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mayo_fixed/widgets/full_width_button.dart';
 import 'package:mayo_fixed/widgets/form_widgets.dart';
 import 'package:mayo_fixed/services/auth_service.dart'; // Import our authentication service
+import 'package:mayo_fixed/utilities/auth_theme.dart'; // Import authentication theme
 import 'sign_up_screen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -211,7 +212,9 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Theme(
+      data: AuthTheme.getAuthTheme(context),
+      child: Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -231,9 +234,9 @@ class _SignInScreenState extends State<SignInScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Welcome Back',
-                  style: TextStyle(
+                  style: AuthTheme.getAuthTextStyle(
                     fontSize: 32.0,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -278,10 +281,10 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                   ),
                 const SizedBox(height: 24.0),
-                const Center(
+                Center(
                   child: Text(
                     'Or log in with',
-                    style: TextStyle(color: Colors.white54),
+                    style: AuthTheme.getAuthTextStyle(color: Colors.white54),
                   ),
                 ),
                 const SizedBox(height: 24.0),
@@ -322,9 +325,9 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                       );
                     },
-                    child: const Text(
+                    child: Text(
                       "Don't have an account? Sign Up",
-                      style: TextStyle(color: Colors.white70),
+                      style: AuthTheme.getAuthTextStyle(color: Colors.white70),
                     ),
                   ),
                 ),
@@ -332,6 +335,7 @@ class _SignInScreenState extends State<SignInScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

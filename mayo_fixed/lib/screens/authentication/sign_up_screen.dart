@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mayo_fixed/widgets/full_width_button.dart';
 import 'package:mayo_fixed/widgets/form_widgets.dart';
 import 'package:mayo_fixed/services/auth_service.dart'; // Import our authentication service
+import 'package:mayo_fixed/utilities/auth_theme.dart'; // Import authentication theme
 import 'sign_in_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -18,7 +19,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _isLoading = false; // Loading state for sign-up process
 
   final _formKey = GlobalKey<FormState>(); // Form key for validation
-  final AuthService _authService = AuthService(); // Instance of our authentication service
+  final AuthService _authService =
+      AuthService(); // Instance of our authentication service
 
   // Controllers for text fields
   final TextEditingController _nameController = TextEditingController();
@@ -93,8 +95,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       _nameError = _nameController.text.isEmpty ? 'Name is required' : null;
       _emailError = _validateEmail(_emailController.text);
       _passwordError = _validatePassword(_passwordController.text);
-      _confirmPasswordError = _validateConfirmPassword(_confirmPasswordController.text);
-      _termsError = !_acceptTerms ? 'You must accept the terms and conditions' : null;
+      _confirmPasswordError =
+          _validateConfirmPassword(_confirmPasswordController.text);
+      _termsError =
+          !_acceptTerms ? 'You must accept the terms and conditions' : null;
     });
 
     // Check if all validations pass
@@ -117,6 +121,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         email: _emailController.text,
         password: _passwordController.text,
         fullName: _nameController.text,
+        inviteCode: _inviteCodeController.text.trim().isEmpty
+            ? null
+            : _inviteCodeController.text.trim(),
       );
 
       if (mounted) {
@@ -133,7 +140,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           // Navigation is handled automatically by AuthWrapper
           // Firebase Auth automatically signs in the user after successful registration
           // The StreamBuilder in AuthWrapper will detect this and navigate to HomeScreen
-          
         } else {
           // Sign-up failed - show error message
           ScaffoldMessenger.of(context).showSnackBar(
@@ -168,7 +174,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Theme(
+      data: AuthTheme.getAuthTheme(context),
+      child: Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -188,9 +196,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Create Account',
-                  style: TextStyle(
+                  style: AuthTheme.getAuthTextStyle(
                     fontSize: 32.0,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -245,7 +253,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     Expanded(
                       child: Text(
                         'I agree to the Terms of Service and Privacy Policy',
-                        style: TextStyle(
+                        style: AuthTheme.getAuthTextStyle(
                           color:
                               _termsError != null ? Colors.red : Colors.white70,
                         ),
@@ -258,31 +266,37 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     padding: const EdgeInsets.only(left: 12.0),
                     child: Text(
                       _termsError!,
-                      style: const TextStyle(color: Colors.red, fontSize: 12.0),
+                      style: AuthTheme.getAuthTextStyle(color: Colors.red, fontSize: 12.0),
                     ),
                   ),
                 const SizedBox(height: 24.0),
                 FullWidthButton(
-                  text: _isLoading ? 'Creating Account...' : 'Sign Up', // Show loading text when processing
-                  onPressed: _isLoading ? null : () => _handleSignUp(), // Wrap async function in sync callback
+                  text: _isLoading
+                      ? 'Creating Account...'
+                      : 'Sign Up', // Show loading text when processing
+                  onPressed: _isLoading
+                      ? null
+                      : () =>
+                          _handleSignUp(), // Wrap async function in sync callback
                   color: Colors.deepPurple.shade400,
                 ),
-                
+
                 // Show loading indicator when signing up
                 if (_isLoading)
                   const Padding(
                     padding: EdgeInsets.only(top: 16.0),
                     child: Center(
                       child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.deepPurple),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.deepPurple),
                       ),
                     ),
                   ),
                 const SizedBox(height: 24.0),
-                const Center(
+                Center(
                   child: Text(
                     'Or sign up with',
-                    style: TextStyle(color: Colors.white54),
+                    style: AuthTheme.getAuthTextStyle(color: Colors.white54),
                   ),
                 ),
                 const SizedBox(height: 24.0),
@@ -323,9 +337,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       );
                     },
-                    child: const Text(
+                    child: Text(
                       'Already have an account? Log In',
-                      style: TextStyle(color: Colors.white70),
+                      style: AuthTheme.getAuthTextStyle(color: Colors.white70),
                     ),
                   ),
                 ),
@@ -333,6 +347,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

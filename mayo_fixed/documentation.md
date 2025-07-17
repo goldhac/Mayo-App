@@ -204,3 +204,212 @@ Future<void> _handleSignIn() async {
 - **Error Propagation**: Structured error handling from service to UI
 
 This authentication system provides a robust, user-friendly, and maintainable foundation for the Mayo app's user management needs.
+
+## Home Screen & Session History
+
+### Overview
+
+The Mayo app's home screen provides a comprehensive dashboard for users to access their therapy sessions and view their session history. The interface features a modern, user-friendly design with personalized greetings, session management, and detailed session history cards.
+
+### Architecture Components
+
+#### 1. File Structure
+```
+lib/
+├── screens/
+│   └── home_screen.dart        # Main dashboard interface
+└── widgets/
+    └── session_history_item.dart # Reusable session history card
+```
+
+#### 2. Home Screen Features
+
+**Personalized Welcome Section:**
+- Dynamic greeting based on user's display name
+- Time-aware greetings (Good morning, afternoon, evening)
+- Motivational messaging for therapy engagement
+
+**Session Management:**
+- Quick access buttons for different session types
+- Solo therapy sessions
+- Couples therapy sessions
+- Interactive AI-powered sessions
+
+**Recent Sessions Display:**
+- Scrollable list of recent therapy sessions
+- Session type identification (Solo/Couples)
+- Date and time information
+- Mood tracking with emoji indicators
+
+#### 3. Session History Item Widget
+
+The `SessionHistoryItem` widget is a reusable component that displays individual session information:
+
+```dart
+class SessionHistoryItem extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool isSolo;
+  final int moodRating;
+  
+  const SessionHistoryItem({
+    Key? key,
+    required this.title,
+    required this.subtitle,
+    required this.isSolo,
+    this.moodRating = 2, // Default to neutral
+  }) : super(key: key);
+}
+```
+
+**Key Features:**
+- **Dynamic Avatar Display**: Shows different images based on session type
+  - Solo sessions: `solo_session_image.png`
+  - Couples sessions: `couples_image.png`
+  - Fallback to default avatar on image load failure
+- **Mood Emoji Integration**: Displays mood-based emojis
+  - Rating 1: 😢 (Sad)
+  - Rating 2: 😐 (Neutral)
+  - Rating 3: 😊 (Happy)
+- **Error Handling**: Robust image loading with fallback mechanisms
+- **Consistent Styling**: Matches app's design language
+
+### Asset Management
+
+#### Image Assets
+The app uses several image assets stored in the `assets/` directory:
+
+```
+assets/
+├── brain_image.png              # Brain illustration
+├── couples_image.png            # Couples session avatar
+├── default_avatar.svg           # Fallback avatar
+├── interactive_ai_sessions.png  # AI session illustration
+├── solo_session_image.png       # Solo session avatar
+└── welcome_illustration.png     # Welcome screen illustration
+```
+
+**Asset Loading Strategy:**
+- Primary asset loading with error handling
+- Fallback to default avatar on load failure
+- Optimized asset paths for Flutter's asset system
+
+### Data Management
+
+#### Mock Data Structure
+The home screen currently uses mock data for development and testing:
+
+```dart
+List<Map<String, dynamic>> recentSessions = [
+  {
+    'title': 'Solo Therapy Session',
+    'subtitle': 'July 20, 2024 • 3:00 PM',
+    'type': 'solo',
+    'moodRating': 3, // Happy
+  },
+  {
+    'title': 'Couples Therapy Session',
+    'subtitle': 'July 15, 2024 • 2:00 PM',
+    'type': 'couples',
+    'moodRating': 2, // Neutral
+  },
+  // Additional sessions...
+];
+```
+
+**Data Properties:**
+- **title**: Session type description
+- **subtitle**: Date and time information
+- **type**: Session category (solo/couples)
+- **moodRating**: User's mood rating (1-3 scale)
+
+### UI/UX Implementation
+
+#### 1. Responsive Design
+- Adaptive layout for different screen sizes
+- Consistent spacing and typography
+- Material Design principles
+
+#### 2. Visual Hierarchy
+- Clear section separation
+- Prominent call-to-action buttons
+- Organized session history display
+
+#### 3. Interactive Elements
+- Tappable session cards
+- Hover effects and visual feedback
+- Smooth scrolling for session history
+
+#### 4. Mood Visualization
+- Color-coded mood emojis with light purple tint
+- Intuitive mood representation
+- Consistent emoji sizing and positioning
+
+### Technical Implementation
+
+#### 1. State Management
+```dart
+class _HomeScreenState extends State<HomeScreen> {
+  List<Map<String, dynamic>> recentSessions = [];
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentSessions();
+  }
+  
+  void _loadRecentSessions() {
+    // Load mock data for development
+    setState(() {
+      recentSessions = [...]; // Mock session data
+    });
+  }
+}
+```
+
+#### 2. Dynamic Content Rendering
+```dart
+// Session type determination
+bool isSolo = session['type']?.toString().toLowerCase().contains('solo') ?? false;
+
+// Mood emoji selection
+Widget _buildMoodEmojis(int moodRating) {
+  String emoji;
+  switch (moodRating) {
+    case 1: emoji = '😢'; break;
+    case 3: emoji = '😊'; break;
+    default: emoji = '😐'; break;
+  }
+  return Text(emoji, style: TextStyle(fontSize: 20));
+}
+```
+
+#### 3. Error Handling
+```dart
+Image.asset(
+  isSolo ? 'assets/solo_session_image.png' : 'assets/couples_image.png',
+  errorBuilder: (context, error, stackTrace) {
+    return Image.asset('assets/default_avatar.svg');
+  },
+)
+```
+
+### Future Enhancements
+
+1. **Backend Integration**: Replace mock data with real session data from Firebase/API
+2. **Advanced Mood Tracking**: Expand mood scale and add mood analytics
+3. **Session Details**: Add detailed session view with notes and progress tracking
+4. **Search and Filter**: Implement session search and filtering capabilities
+5. **Offline Support**: Cache session data for offline viewing
+6. **Push Notifications**: Session reminders and mood check-ins
+
+### Benefits of This Implementation
+
+1. **Modular Design**: Reusable `SessionHistoryItem` widget
+2. **Scalable Architecture**: Easy to extend with new session types
+3. **User-Centric**: Intuitive mood tracking and session visualization
+4. **Error Resilient**: Robust image loading and fallback mechanisms
+5. **Performance Optimized**: Efficient asset loading and state management
+6. **Maintainable**: Clean separation of concerns and well-documented code
+
+This home screen implementation provides a solid foundation for user engagement and session management in the Mayo therapy app.
