@@ -24,21 +24,16 @@ class MoodTrackingSection extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF4DD0E1),
-            Color(0xFF26C6DA),
-          ],
-        ),
+        borderRadius: BorderRadius.circular(16),
+        color: const Color(0x1A6B46C1), // 0.1 opacity purple
+        border: Border.all(color: const Color(0xFF6B46C1)),
       ),
       child: Material(
         color: Colors.transparent,
+        elevation: 0,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -50,7 +45,7 @@ class MoodTrackingSection extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Color(0xFF6B46C1),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -61,7 +56,7 @@ class MoodTrackingSection extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: Color(0xFF6B46C1),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -71,7 +66,7 @@ class MoodTrackingSection extends StatelessWidget {
                   'Mood Chart',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.white70,
+                    color: Color(0xBF6B46C1), // 0.7 opacity purple
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -84,7 +79,7 @@ class MoodTrackingSection extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Color(0xFF6B46C1),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -94,7 +89,7 @@ class MoodTrackingSection extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: const Color(0x33FFFFFF), // 0.2 opacity white
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -102,7 +97,7 @@ class MoodTrackingSection extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Colors.white,
+                          color: Color(0xFF6B46C1),
                         ),
                       ),
                     ),
@@ -135,7 +130,7 @@ class MoodTrackingSection extends StatelessWidget {
             width: 24,
             height: value * 60, // Scale to fit the height
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.7),
+              color: const Color(0xB3FFFFFF), // 0.7 opacity white
               borderRadius: BorderRadius.circular(4),
             ),
           );
@@ -151,9 +146,9 @@ class MoodTrackingSection extends StatelessWidget {
       children: days.map((day) {
         return Text(
           day,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 12,
-            color: Colors.white.withOpacity(0.8),
+            color: Color(0xCC6B46C1), // 0.8 opacity purple
           ),
         );
       }).toList(),

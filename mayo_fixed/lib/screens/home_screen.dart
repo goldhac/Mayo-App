@@ -21,12 +21,25 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
   final DatabaseService _databaseService = DatabaseService();
-
+  
+  // State variables
   Map<String, dynamic>? _userData;
   bool _isLoading = true;
   bool _isLogoutLoading = false;
   String? _currentSessionId;
-  int _currentNavIndex = 0;
+  int _currentIndex = 0;
+  
+  // Helper method to get time of day for greeting
+  String _getTimeOfDay() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Morning';
+    } else if (hour < 17) {
+      return 'Afternoon';
+    } else {
+      return 'Evening';
+    }
+  }
   List<Map<String, dynamic>> recentSessions = [];
 
   @override
@@ -407,7 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.grey[100],
       body: SafeArea(
         child: Column(
           children: [
@@ -419,7 +432,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     // Greeting Header
                     GreetingHeader(
-                      userName: _userData?['name']?.split(' ')[0] ?? 'User',
+                      greeting: 'Good ${_getTimeOfDay()}',
+                      userName: _userData?['nickname'] ?? _userData?['name']?.split(' ')[0] ?? 'User',
                       onNotificationTap: () {
                         // Handle notification tap
                       },
@@ -427,33 +441,51 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 24),
 
                     // New Session Section
-                    NewSessionCard(
-                      toptext: "New Session",
-                      title: 'Start solo or couples chat',
-                      subtitle: 'Begin',
-                      onTap: _startSession,
-                      icon: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
-                          'assets/brain_image.png',
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: NewSessionCard(
+                        toptext: "New Session",
+                        title: 'Start solo or couples chat',
+                        subtitle: 'Begin',
+                        onTap: _startSession,
+                        icon: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.asset(
+                            'assets/brain_image.png',
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 32),
 
-                    // Recent Sessions
-                    const Text(
-                      'Recent Sessions',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                    // Recent Sessions Section
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
                       ),
-                    ),
-                    const SizedBox(height: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Recent Sessions',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF6B46C1),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                     ...recentSessions.map((session) => SessionHistoryItem(
                           date: session['date'],
                           type: session['type'],
@@ -468,24 +500,36 @@ class _HomeScreenState extends State<HomeScreen> {
                             // Handle more options
                           },
                         )),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 32),
 
                     // Mood Tracking Section
-                    MoodTrackingSection(
-                      monthTitle: 'This Months Mood',
-                      weekTitle: 'This Week\'s Mood',
-                      moodPercentage: 75,
-                      weeklyChange: '+10%',
-                      weeklyData: [0.6, 0.8, 0.4, 0.9, 0.7, 0.5, 0.8],
-                      onTap: () {
-                        // Navigate to mood tracker screen
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const MoodTrackerScreen(),
-                          ),
-                        );
-                      },
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: MoodTrackingSection(
+                        monthTitle: 'This Months Mood',
+                        weekTitle: 'This Week\'s Mood',
+                        moodPercentage: 75,
+                        weeklyChange: '+10%',
+                        weeklyData: [0.6, 0.8, 0.4, 0.9, 0.7, 0.5, 0.8],
+                        onTap: () {
+                          // Navigate to mood tracker screen
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MoodTrackerScreen(),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -493,10 +537,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             // Bottom Navigation
             CustomBottomNavigation(
-              currentIndex: _currentNavIndex,
+              currentIndex: _currentIndex,
               onTap: (index) {
                 setState(() {
-                  _currentNavIndex = index;
+                  _currentIndex = index;
                 });
                 // Handle navigation
                 switch (index) {
@@ -526,6 +570,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     break;
                 }
               },
+              backgroundColor: Colors.white,
+              selectedItemColor: const Color(0xFF6B46C1),
+              unselectedItemColor: Colors.grey,
             ),
           ],
         ),

@@ -126,7 +126,7 @@ class ProfileSetupChecker extends StatelessWidget {
         }
 
         // Check if profile setup is complete
-        final isProfileComplete = snapshot.data ?? true;
+        final isProfileComplete = snapshot.data ?? false;
 
         if (isProfileComplete) {
           // Profile is complete - show home screen

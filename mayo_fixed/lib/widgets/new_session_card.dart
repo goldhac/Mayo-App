@@ -32,10 +32,11 @@ class NewSessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
-      // Card container
+      // Card container with no elevation, just border
       child: Material(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
+        elevation: 0, // Remove elevation for flat design
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
@@ -80,8 +81,9 @@ class NewSessionCard extends StatelessWidget {
                       // Action button (pill-shaped)
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(20), // Pill shape
+                          color: const Color(0xFF6B46C1).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16), // Consistent with mood tracker
+                          border: Border.all(color: const Color(0xFF6B46C1)),
                         ),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 18, vertical: 10),
@@ -92,18 +94,18 @@ class NewSessionCard extends StatelessWidget {
                             // Button text
                             Text(
                               subtitle,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                                color: Color(0xFF6B46C1),
                               ),
                             ),
                             const SizedBox(width: 4),
                             // Arrow icon
-                            Icon(
+                            const Icon(
                               Icons.arrow_forward,
                               size: 14,
-                              color: Colors.black87,
+                              color: Color(0xFF6B46C1),
                             ),
                           ],
                         ),

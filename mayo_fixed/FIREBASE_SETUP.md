@@ -1,10 +1,10 @@
 # Firebase Setup Guide
+## Firebase Rules Deployment
 
-## Firestore Rules Deployment
 
-The app now includes Firestore security rules that need to be deployed to your Firebase project. These rules ensure that users can only access their own data, including mood entries.
+The app now includes Firestore and Storage security rules that need to be deployed to your Firebase project. These rules ensure that users can only access their own data, including mood entries and profile pictures.
 
-### Steps to Deploy Firestore Rules
+### Steps to Deploy Firebase Rules
 
 1. **Install Firebase CLI** (if not already installed)
    ```
@@ -21,24 +21,41 @@ The app now includes Firestore security rules that need to be deployed to your F
    cd "c:\Users\goldn\Documents\Mayo App\mayo_fixed"
    firebase init
    ```
-   - Select Firestore when prompted for which Firebase features to set up
+   - Select Firestore and Storage when prompted for which Firebase features to set up
    - Select your project (mayo-60118)
    - When asked about the Firestore rules file, use the existing `firestore.rules` file
+   - When asked about the Storage rules file, use the existing `storage.rules` file
 
-4. **Deploy the rules**
+4. **Deploy Firestore Rules**
    ```
    firebase deploy --only firestore:rules
+   ```
+
+5. **Deploy Storage Rules**
+   ```
+   firebase deploy --only storage:rules
    ```
 
 ## Alternative: Deploy Rules via Firebase Console
 
 If you prefer using the Firebase Console:
 
+### For Firestore Rules:
+
 1. Go to [Firebase Console](https://console.firebase.google.com/)
 2. Select your project (mayo-60118)
 3. Navigate to Firestore Database in the left sidebar
 4. Click on the "Rules" tab
 5. Copy and paste the contents of the `firestore.rules` file
+6. Click "Publish"
+
+### For Storage Rules:
+
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Select your project (mayo-60118)
+3. Navigate to Storage in the left sidebar
+4. Click on the "Rules" tab
+5. Copy and paste the contents of the `storage.rules` file
 6. Click "Publish"
 
 ## Firestore Rules Explanation
@@ -58,3 +75,17 @@ The rules in `firestore.rules` provide the following permissions:
    - Users can create couple data where they are either user1 or user2
 
 These rules ensure proper data isolation and security for all app features, including the mood tracker functionality.
+
+## Storage Rules Explanation
+
+The rules in `storage.rules` provide the following permissions:
+
+1. **Profile Pictures**:
+   - Any authenticated user can read profile pictures
+   - Users can only write (upload) their own profile pictures
+   - The file path must match the pattern `/profile_pictures/{userId}_{timestamp}.jpg`
+
+2. **Default Rule**:
+   - All other access is denied by default
+
+These rules ensure that users can only upload their own profile pictures while allowing all authenticated users to view profile pictures.

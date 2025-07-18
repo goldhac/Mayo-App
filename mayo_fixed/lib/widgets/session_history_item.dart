@@ -24,13 +24,18 @@ class SessionHistoryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
                 // Avatar - displays different images based on session type
@@ -39,7 +44,8 @@ class SessionHistoryItem extends StatelessWidget {
                   height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.grey[200],
+                    color: Colors.white,
+                    border: Border.all(color: const Color(0xFF6B46C1).withOpacity(0.3), width: 2),
                   ),
                   child: ClipOval(
                     child: isSolo == true
@@ -108,18 +114,12 @@ class SessionHistoryItem extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [
-            Colors.purple[300]!,
-            Colors.purple[500]!,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: const Color(0xFF6B46C1).withOpacity(0.1),
+        border: Border.all(color: const Color(0xFF6B46C1)),
       ),
       child: const Icon(
         Icons.person,
-        color: Colors.white,
+        color: Color(0xFF6B46C1),
         size: 24,
       ),
     );
@@ -129,31 +129,41 @@ class SessionHistoryItem extends StatelessWidget {
   List<Widget> _buildMoodEmojis() {
     // Default mood emoji (neutral if no rating provided)
     String emoji = '😐';
+    Color moodColor = Colors.grey;
 
     // Update emoji based on mood rating
     if (moodRating != null) {
       switch (moodRating!) {
         case 1: // Sad mood
           emoji = '😢';
+          moodColor = Colors.red.shade400;
           break;
         case 2: // Neutral mood
           emoji = '😐';
+          moodColor = Colors.amber.shade400;
           break;
         case 3: // Happy mood
           emoji = '😊';
+          moodColor = Colors.green.shade400;
           break;
         default:
           emoji = '😐';
+          moodColor = Colors.amber.shade400;
       }
     }
 
     return [
       Container(
+        padding: const EdgeInsets.all(8.0),
+        decoration: BoxDecoration(
+          color: moodColor.withOpacity(0.1),
+          border: Border.all(color: moodColor),
+          borderRadius: BorderRadius.circular(12.0),
+        ),
         child: Text(
           emoji,
           style: TextStyle(
             fontSize: 20,
-            color: Colors.purple[300], // Light purple color
           ),
         ),
       )

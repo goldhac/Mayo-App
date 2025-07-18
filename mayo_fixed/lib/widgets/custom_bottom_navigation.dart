@@ -4,18 +4,24 @@ import 'package:flutter/material.dart';
 class CustomBottomNavigation extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
+  final Color backgroundColor;
+  final Color selectedItemColor;
+  final Color unselectedItemColor;
 
   const CustomBottomNavigation({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.backgroundColor = Colors.white,
+    this.selectedItemColor = const Color(0xFF6B46C1),
+    this.unselectedItemColor = Colors.grey,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: backgroundColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -77,7 +83,7 @@ class CustomBottomNavigation extends StatelessWidget {
             Icon(
               icon,
               size: 24,
-              color: isSelected ? const Color(0xFF6B46C1) : Colors.grey[600],
+              color: isSelected ? selectedItemColor : unselectedItemColor,
             ),
             const SizedBox(height: 4),
             Text(
@@ -85,7 +91,7 @@ class CustomBottomNavigation extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected ? const Color(0xFF6B46C1) : Colors.grey[600],
+                color: isSelected ? selectedItemColor : unselectedItemColor,
               ),
             ),
           ],
