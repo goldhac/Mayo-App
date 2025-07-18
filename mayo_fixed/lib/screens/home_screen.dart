@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mayo_fixed/services/auth_service.dart';
 import 'package:mayo_fixed/services/database_service.dart';
 import 'package:mayo_fixed/screens/authentication/sign_in_screen.dart';
+import 'package:mayo_fixed/screens/mood_tracker_screen.dart';
 import 'package:mayo_fixed/widgets/greeting_header.dart';
 import 'package:mayo_fixed/widgets/new_session_card.dart';
 import 'package:mayo_fixed/widgets/session_history_item.dart';
@@ -477,7 +478,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       weeklyChange: '+10%',
                       weeklyData: [0.6, 0.8, 0.4, 0.9, 0.7, 0.5, 0.8],
                       onTap: () {
-                        // Handle mood section tap
+                        // Navigate to mood tracker screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MoodTrackerScreen(),
+                          ),
+                        );
                       },
                     ),
                   ],
@@ -506,7 +513,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                     break;
                   case 2:
-                    _addMoodData();
+                    // Navigate to mood tracker screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MoodTrackerScreen(),
+                      ),
+                    );
                     break;
                   case 3:
                     _handleLogout();

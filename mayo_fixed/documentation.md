@@ -413,3 +413,160 @@ Image.asset(
 6. **Maintainable**: Clean separation of concerns and well-documented code
 
 This home screen implementation provides a solid foundation for user engagement and session management in the Mayo therapy app.
+
+## Mood Tracker Screen
+
+### Overview
+
+The Mood Tracker screen provides users with a comprehensive interface to track, record, and visualize their emotional states over time. The design follows a clean, minimalist approach with a focus on usability and visual hierarchy.
+
+### Architecture Components
+
+#### 1. File Structure
+```
+lib/
+├── screens/
+│   └── mood_tracker_screen.dart  # Mood tracking interface
+└── widgets/
+    └── custom_bottom_navigation.dart # Navigation component
+```
+
+#### 2. Mood Tracker Features
+
+**Mood Selection Section:**
+- Five distinct mood buttons (Very Sad, Sad, Neutral, Happy, Very Happy)
+- Color-coded buttons with emoji indicators
+- Descriptive text prompting user input
+
+**Mood History Visualization:**
+- 7-day bar chart showing mood trends
+- Color-coded bars corresponding to mood ratings
+- Day labels for easy reference
+
+**Mood History List:**
+- Chronological list of recorded moods
+- Filterable by mood type and searchable by notes
+- Clean, card-less design with subtle borders
+- Color-coded emoji indicators
+- Time display in elegant badge format
+
+**Navigation:**
+- Custom bottom navigation with proper highlighting
+- Seamless transition between app sections
+
+### UI Design Implementation
+
+#### 1. Mood List Tiles
+
+The mood history items feature a clean, modern design:
+
+```dart
+Container(
+  margin: const EdgeInsets.symmetric(vertical: 8.0),
+  padding: const EdgeInsets.all(16.0),
+  decoration: BoxDecoration(
+    color: Colors.white,
+    border: Border.all(color: Colors.grey.shade200),
+    borderRadius: BorderRadius.circular(16.0),
+  ),
+  child: Row(
+    children: [
+      // Emoji container with dynamic background color
+      Container(
+        padding: const EdgeInsets.all(8.0),
+        decoration: BoxDecoration(
+          color: _getMoodColor(mood.rating).withOpacity(0.1),
+          border: Border.all(color: _getMoodColor(mood.rating)),
+          borderRadius: BorderRadius.circular(12.0),
+        ),
+        child: Text(_getMoodEmoji(mood.rating), style: TextStyle(fontSize: 24)),
+      ),
+      // Mood details with time badge
+    ],
+  ),
+)
+```
+
+**Key Design Elements:**
+- White background with subtle border instead of elevated cards
+- Consistent 16px padding and 16px border radius
+- Color-coded emoji containers with matching border
+- Semi-transparent background for emoji containers (10% opacity)
+
+#### 2. Mood Selection Buttons
+
+The mood selection buttons feature a refined, flat design:
+
+```dart
+ElevatedButton(
+  style: ElevatedButton.styleFrom(
+    elevation: 0,
+    backgroundColor: _getMoodColor(rating).withOpacity(0.1),
+    foregroundColor: _getMoodColor(rating),
+    padding: const EdgeInsets.symmetric(vertical: 18.0),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16.0),
+      side: BorderSide(color: _getMoodColor(rating)),
+    ),
+  ),
+  child: Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text(_getMoodEmoji(rating), style: TextStyle(fontSize: 32)),
+      const SizedBox(height: 8),
+      Text(_getMoodText(rating)),
+    ],
+  ),
+  onPressed: () => _recordMood(rating),
+)
+```
+
+**Key Design Elements:**
+- Zero elevation for flat appearance
+- Semi-transparent background color (10% opacity)
+- Colored border matching the mood theme
+- Increased vertical padding (18px)
+- Consistent 16px border radius
+
+#### 3. Custom Bottom Navigation
+
+The custom bottom navigation features proper highlighting and navigation:
+
+```dart
+CustomBottomNavigation(
+  currentIndex: 2, // Mood tracker is at index 2
+  onTap: (index) {
+    if (index != 2) {
+      Navigator.pop(context);
+    }
+  },
+)
+```
+
+**Navigation Logic:**
+- Current screen highlighted with index 2
+- When another tab is selected, the current screen is popped
+- Further navigation handled by the home screen
+
+### Design Principles Applied
+
+1. **Minimalist Approach**: Removed unnecessary shadows and elevations
+2. **Visual Hierarchy**: Color-coded elements for intuitive understanding
+3. **Consistent Spacing**: Uniform padding and margins throughout
+4. **Color Psychology**: Mood-appropriate colors with subtle shading
+5. **Typography Hierarchy**: Clear distinction between primary and secondary text
+6. **Whitespace Utilization**: Ample spacing for improved readability
+7. **Subtle Borders**: Light borders instead of shadows for definition
+8. **Consistent Corner Radius**: 16px radius applied throughout
+
+### Benefits of This Implementation
+
+1. **Improved Readability**: Clean design with clear visual hierarchy
+2. **Enhanced User Experience**: Intuitive color-coding and consistent styling
+3. **Better Visual Harmony**: Cohesive design language across components
+4. **Reduced Visual Noise**: Elimination of unnecessary shadows and elevations
+5. **Improved Accessibility**: Better contrast and clearer visual cues
+6. **Mature Aesthetic**: Professional appearance suitable for therapy application
+7. **Responsive Design**: Adaptable layout for various screen sizes
+
+This mood tracker implementation provides users with an elegant, intuitive interface for monitoring their emotional wellbeing over time.
