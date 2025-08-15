@@ -570,3 +570,241 @@ CustomBottomNavigation(
 7. **Responsive Design**: Adaptable layout for various screen sizes
 
 This mood tracker implementation provides users with an elegant, intuitive interface for monitoring their emotional wellbeing over time.
+
+## Partner Linking System
+
+### Overview
+
+The Mayo app now features a comprehensive partner linking system that allows users to connect with their therapy partners for couples sessions. This system provides secure partner discovery, linking management, and seamless integration with the existing authentication and database architecture.
+
+### Recent Achievements
+
+#### 1. Partner Linking Infrastructure
+- **Partner Code Generation**: Implemented unique 6-digit alphanumeric codes for partner discovery
+- **Secure Partner Discovery**: Users can find partners using generated codes without exposing personal information
+- **Bidirectional Linking**: Both users are automatically linked when one initiates the connection
+- **Role Management**: User roles automatically update from 'individual' to 'couple' upon linking
+- **Couple Management**: Dedicated Firestore collection for managing partner relationships
+
+#### 2. User Interface Components
+- **Partner Link Screen**: Comprehensive interface for partner management
+- **Linked Partner Widget**: Modular component for displaying partner information
+- **Partner Code Display**: Secure code sharing interface with copy functionality
+- **Partner Search**: Input field for entering partner codes
+- **Unlink Functionality**: Safe partner disconnection with confirmation dialogs
+
+#### 3. Database Integration
+- **Firestore Collections**: New collections for partner codes, invites, and couple management
+- **Security Rules**: Comprehensive Firestore rules for partner operations
+- **Data Consistency**: Automatic updates across user documents and couple records
+- **Error Handling**: Robust error management for all partner operations
+
+### Architecture Components
+
+#### 1. File Structure
+```
+lib/
+├── screens/
+│   └── partner_link_screen.dart    # Partner management interface
+├── widgets/
+│   └── linked_partner_widget.dart  # Partner display component
+└── services/
+    └── database_service.dart       # Partner linking operations
+```
+
+#### 2. Database Collections
+
+**Users Collection Updates:**
+```dart
+{
+  'userId': 'user123',
+  'email': 'user@example.com',
+  'displayName': 'John Doe',
+  'role': 'couple',           // Updated from 'individual'
+  'partnerId': 'partner456',  // New field for partner reference
+  'createdAt': timestamp,
+  'updatedAt': timestamp
+}
+```
+
+**Partner Codes Collection:**
+```dart
+{
+  'userId': 'user123',
+  'code': 'ABC123',
+  'createdAt': timestamp,
+  'expiresAt': timestamp
+}
+```
+
+**Couple Management Collection:**
+```dart
+{
+  'userId1': 'user123',
+  'userId2': 'partner456',
+  'createdAt': timestamp,
+  'status': 'active'
+}
+```
+
+### Technology Stack
+
+#### 1. Frontend Technologies
+- **Flutter**: Cross-platform UI framework
+- **Dart**: Programming language for Flutter development
+- **Material Design**: UI component library
+- **State Management**: Flutter's built-in setState for local state
+
+#### 2. Backend Technologies
+- **Firebase Firestore**: NoSQL database for real-time data
+- **Firebase Authentication**: User authentication and session management
+- **Firestore Security Rules**: Database access control and validation
+
+#### 3. Key Dependencies
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.15.3
+  cloud_firestore: ^4.13.6
+  firebase_storage: ^11.5.6
+```
+
+### Implementation Details
+
+#### 1. Partner Code Generation
+```dart
+Future<String> generatePartnerCode() async {
+  String code;
+  bool isUnique = false;
+  
+  do {
+    code = _generateRandomCode();
+    final existingCode = await _firestore
+        .collection('partnerCodes')
+        .where('code', isEqualTo: code)
+        .get();
+    isUnique = existingCode.docs.isEmpty;
+  } while (!isUnique);
+  
+  return code;
+}
+```
+
+#### 2. Partner Linking Process
+```dart
+Future<DatabaseResult> linkWithPartner(String partnerCode) async {
+  // 1. Find partner by code
+  final partnerQuery = await _firestore
+      .collection('partnerCodes')
+      .where('code', isEqualTo: partnerCode)
+      .limit(1)
+      .get();
+  
+  // 2. Validate partner exists and prevent self-linking
+  // 3. Check if either user already has a partner
+  // 4. Create couple management document
+  // 5. Update both users' partnerId and role
+  
+  return DatabaseResult(success: true, message: 'Successfully linked with partner');
+}
+```
+
+#### 3. Firestore Security Rules
+```javascript
+// Partner codes collection
+match /partnerCodes/{document} {
+  allow read, write, create: if request.auth != null;
+}
+
+// Couple management collection
+match /coupleManagement/{document} {
+  allow read, write, create: if request.auth != null 
+    && (resource.data.userId1 == request.auth.uid 
+        || resource.data.userId2 == request.auth.uid);
+}
+
+// Users collection - partner updates
+match /users/{userId} {
+  allow read, write: if request.auth != null;
+}
+```
+
+### User Experience Features
+
+#### 1. Partner Discovery
+- **Code Generation**: Users generate unique 6-digit codes
+- **Code Sharing**: Easy copy-to-clipboard functionality
+- **Code Expiration**: Automatic code expiration for security
+- **Search Interface**: Simple partner code input field
+
+#### 2. Partner Management
+- **Partner Information Display**: Shows linked partner's name and email
+- **Link Status**: Clear indication of partnership status
+- **Unlink Option**: Safe partner disconnection with confirmation
+- **Error Handling**: User-friendly error messages for all operations
+
+#### 3. Visual Design
+- **Consistent Styling**: Matches app's design language
+- **Loading States**: Visual feedback during operations
+- **Confirmation Dialogs**: Safety measures for destructive actions
+- **Responsive Layout**: Adapts to different screen sizes
+
+### Security Features
+
+#### 1. Data Protection
+- **Authentication Required**: All operations require user authentication
+- **User Isolation**: Users can only access their own data
+- **Partner Validation**: Prevents self-linking and duplicate partnerships
+- **Secure Code Generation**: Cryptographically secure random codes
+
+#### 2. Database Security
+- **Firestore Rules**: Comprehensive access control
+- **Data Validation**: Server-side validation for all operations
+- **Audit Trail**: Timestamps for all partner operations
+- **Error Logging**: Detailed error tracking for debugging
+
+### Benefits of This Implementation
+
+#### 1. Technical Benefits
+- **Modular Architecture**: Reusable components and services
+- **Scalable Design**: Easy to extend with new partner features
+- **Error Resilience**: Comprehensive error handling at all levels
+- **Performance Optimized**: Efficient database queries and operations
+- **Type Safety**: Strong typing throughout the codebase
+
+#### 2. User Experience Benefits
+- **Intuitive Interface**: Simple, user-friendly partner management
+- **Secure Process**: Safe partner discovery without exposing personal data
+- **Seamless Integration**: Natural fit with existing app architecture
+- **Real-time Updates**: Immediate reflection of partnership changes
+- **Reliable Operation**: Robust error handling and user feedback
+
+#### 3. Business Benefits
+- **Couples Therapy Support**: Enables couples therapy features
+- **User Engagement**: Encourages partner participation in therapy
+- **Data Insights**: Relationship data for therapy optimization
+- **Scalable Foundation**: Ready for advanced couples features
+
+### Future Enhancements
+
+#### 1. Advanced Partner Features
+- **Partner Invitations**: Email-based partner invitation system
+- **Multiple Partners**: Support for group therapy scenarios
+- **Partner Permissions**: Granular control over shared data
+- **Partner Analytics**: Relationship progress tracking
+
+#### 2. Integration Opportunities
+- **Shared Sessions**: Joint therapy session management
+- **Couple Mood Tracking**: Synchronized mood monitoring
+- **Communication Tools**: In-app partner messaging
+- **Progress Sharing**: Mutual therapy progress visibility
+
+#### 3. Technical Improvements
+- **Offline Support**: Local caching for partner data
+- **Push Notifications**: Partner activity notifications
+- **Advanced Security**: Enhanced encryption for sensitive data
+- **Performance Optimization**: Improved query efficiency
+
+This partner linking system establishes a solid foundation for couples therapy features while maintaining the app's focus on security, usability, and scalable architecture.

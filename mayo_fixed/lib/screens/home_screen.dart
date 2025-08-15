@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:mayo_fixed/services/auth_service.dart';
 import 'package:mayo_fixed/services/database_service.dart';
-import 'package:mayo_fixed/screens/authentication/sign_in_screen.dart';
 import 'package:mayo_fixed/screens/mood_tracker_screen.dart';
+import 'package:mayo_fixed/screens/profile_screen.dart';
+import 'package:mayo_fixed/screens/couples_chat_screen.dart';
+import 'package:mayo_fixed/screens/notifications_screen.dart';
 import 'package:mayo_fixed/widgets/greeting_header.dart';
 import 'package:mayo_fixed/widgets/new_session_card.dart';
 import 'package:mayo_fixed/widgets/session_history_item.dart';
 import 'package:mayo_fixed/widgets/mood_tracking_section.dart';
-import 'package:mayo_fixed/widgets/custom_bottom_navigation.dart';
+
+import 'package:mayo_fixed/widgets/shimmer_widgets.dart';
+import 'package:mayo_fixed/screens/onboarding_screens/onboarding_screen.dart';
 
 /// HomeScreen - The main screen users see after successful authentication
 /// This screen displays a welcome message and provides logout functionality
@@ -27,7 +31,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   bool _isLogoutLoading = false;
   String? _currentSessionId;
-  int _currentIndex = 0;
   
   // Helper method to get time of day for greeting
   String _getTimeOfDay() {
@@ -77,41 +80,75 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _loadRecentSessions() async {
     // Mock data for recent sessions - replace with actual database call
-    setState(() {
-      recentSessions = [
-        {
-          'date': 'July 20, 2024',
-          'type': 'Solo',
-          'avatarUrl': null,
-          'moodRating': 3, // Happy mood
-        },
-        {
-          'date': 'July 15, 2024',
-          'type': 'Couples',
-          'avatarUrl': null,
-          'moodRating': 2, // Neutral mood
-        },
-        {
-          'date': 'July 10, 2024',
-          'type': 'Solo',
-          'avatarUrl': null,
-          'moodRating': 1, // Sad mood
-        },
-        {
-          'date': 'July 5, 2024',
-          'type': 'Couples',
-          'avatarUrl': null,
-          'moodRating': 3, // Happy mood
-        },
-      ];
-    });
+    if (mounted) {
+      setState(() {
+        recentSessions = [
+          {
+            'date': 'July 20, 2024',
+            'type': 'Solo',
+            'avatarUrl': null,
+            'moodRating': 3, // Happy mood
+          },
+          {
+            'date': 'July 15, 2024',
+            'type': 'Couples',
+            'avatarUrl': null,
+            'moodRating': 2, // Neutral mood
+          },
+          {
+            'date': 'July 10, 2024',
+            'type': 'Solo',
+            'avatarUrl': null,
+            'moodRating': 1, // Sad mood
+          },
+          {
+            'date': 'July 5, 2024',
+            'type': 'Couples',
+            'avatarUrl': null,
+            'moodRating': 3, // Happy mood
+          },
+        ];
+      });
+    }
   }
 
-  /// Start a new session
+  /// Start a new session - shows dialog to choose session type
   Future<void> _startSession() async {
     final user = _authService.currentUser;
-    if (user != null) {
-      final result = await _databaseService.createSession(user.uid);
+    if (user == null) return;
+    
+    // Get user data to check if they have a partner
+    final userResult = await _databaseService.getUserData(user.uid);
+    if (!userResult.success || userResult.data == null) {
+      _showError('Failed to load user data');
+      return;
+    }
+    
+    final userData = userResult.data as Map<String, dynamic>;
+    final hasPartner = userData['partnerId'] != null;
+    
+    // Show session type selection dialog
+    final sessionType = await _showSessionTypeDialog(hasPartner);
+    if (sessionType == null) return;
+    
+    if (sessionType == 'couples_chat') {
+      // Navigate to couples chat screen
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CouplesChatScreen(
+              partnerId: userData['partnerId'],
+            ),
+          ),
+        );
+      }
+    } else {
+      // Create individual session (existing functionality)
+      final result = await _databaseService.createSession(
+        userId: user.uid,
+        sessionType: 'individual',
+      );
       if (result.success && result.data != null) {
         setState(() {
           _currentSessionId = result.data!['sessionId'];
@@ -119,35 +156,82 @@ class _HomeScreenState extends State<HomeScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Session started successfully!'),
+              content: Text('Solo session started successfully!'),
               backgroundColor: Colors.green,
             ),
           );
         }
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result.message),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        _showError(result.message);
       }
+    }
+  }
+  
+  /// Show session type selection dialog
+  Future<String?> _showSessionTypeDialog(bool hasPartner) async {
+    return showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Choose Session Type'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.person, color: Color(0xFF6B46C1)),
+                title: const Text('Solo Session'),
+                subtitle: const Text('Chat with AI therapist alone'),
+                onTap: () => Navigator.of(context).pop('individual'),
+              ),
+              if (hasPartner)
+                ListTile(
+                  leading: const Icon(Icons.people, color: Color(0xFF6B46C1)),
+                  title: const Text('Couples Chat'),
+                  subtitle: const Text('Chat with your partner'),
+                  onTap: () => Navigator.of(context).pop('couples_chat'),
+                )
+              else
+                ListTile(
+                  leading: const Icon(Icons.people, color: Colors.grey),
+                  title: const Text('Couples Chat'),
+                  subtitle: const Text('Link with a partner first'),
+                  enabled: false,
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  
+  /// Show error message
+  void _showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   /// End current session
   Future<void> _endSession() async {
     if (_currentSessionId != null) {
-      final result = await _databaseService.completeSession(
-        sessionId: _currentSessionId!,
-        feedback: 'Session completed from home screen',
-      );
+      final result = await _databaseService.endSession(_currentSessionId!);
       if (result.success) {
-        setState(() {
-          _currentSessionId = null;
-        });
+        if (mounted) {
+          setState(() {
+            _currentSessionId = null;
+          });
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -184,10 +268,13 @@ class _HomeScreenState extends State<HomeScreen> {
     // Show mood rating dialog
     final rating = await _showMoodDialog();
     if (rating != null) {
-      final result = await _databaseService.addMoodData(
-        sessionId: _currentSessionId!,
-        moodRating: rating,
-        moodComment: 'Mood recorded from home screen',
+      final user = _authService.currentUser;
+      if (user == null) return;
+
+      final result = await _databaseService.saveMoodEntry(
+        userId: user.uid,
+        mood: rating,
+        notes: 'Mood recorded from home screen',
       );
 
       if (mounted) {
@@ -262,27 +349,27 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Show invite code dialog
-  Future<void> _showInviteCode() async {
+  /// Show partner code dialog
+  Future<void> _showPartnerCode() async {
     final user = _authService.currentUser;
     if (user != null) {
-      final result = await _databaseService.generateInviteCode(user.uid);
+      final result = await _databaseService.generatePartnerCode(user.uid);
       if (result.success && result.data != null) {
-        final inviteCode = result.data!['inviteCode'];
+        final partnerCode = result.data!['partnerCode'];
         if (mounted) {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
               backgroundColor: Colors.grey.shade900,
               title: const Text(
-                'Your Invite Code',
+                'Your Partner Code',
                 style: TextStyle(color: Colors.white),
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                    'Share this code with your partner:',
+                    'Copy and share this code with your partner:',
                     style: TextStyle(color: Colors.white70),
                   ),
                   const SizedBox(height: 16),
@@ -294,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       border: Border.all(color: Colors.deepPurple),
                     ),
                     child: SelectableText(
-                      inviteCode,
+                      partnerCode,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -375,7 +462,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
-                builder: (context) => const SignInScreen(),
+                builder: (context) => const OnboardingScreen(),
               ),
               (route) => false,
             );
@@ -412,9 +499,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
+      return Scaffold(
+        backgroundColor: Colors.grey[100],
+        body: SafeArea(
+          child: SingleChildScrollView(
+            child: ShimmerLayouts.homeContent(),
+          ),
         ),
       );
     }
@@ -435,7 +525,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       greeting: 'Good ${_getTimeOfDay()}',
                       userName: _userData?['nickname'] ?? _userData?['name']?.split(' ')[0] ?? 'User',
                       onNotificationTap: () {
-                        // Handle notification tap
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NotificationsScreen(),
+                          ),
+                        );
                       },
                     ),
                     const SizedBox(height: 24),
@@ -535,45 +630,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            // Bottom Navigation
-            CustomBottomNavigation(
-              currentIndex: _currentIndex,
-              onTap: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-                // Handle navigation
-                switch (index) {
-                  case 0:
-                    // Already on home
-                    break;
-                  case 1:
-                    // View session history
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Sessions history feature coming soon!'),
-                        backgroundColor: Colors.blue,
-                      ),
-                    );
-                    break;
-                  case 2:
-                    // Navigate to mood tracker screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const MoodTrackerScreen(),
-                      ),
-                    );
-                    break;
-                  case 3:
-                    _handleLogout();
-                    break;
-                }
-              },
-              backgroundColor: Colors.white,
-              selectedItemColor: const Color(0xFF6B46C1),
-              unselectedItemColor: Colors.grey,
-            ),
+            // Bottom navigation is handled by MainNavigationScreen
           ],
         ),
       ),

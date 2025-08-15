@@ -3,6 +3,7 @@ import 'package:mayo_fixed/widgets/full_width_button.dart';
 import 'package:mayo_fixed/widgets/form_widgets.dart';
 import 'package:mayo_fixed/services/auth_service.dart'; // Import our authentication service
 import 'package:mayo_fixed/utilities/auth_theme.dart'; // Import authentication theme
+import 'package:mayo_fixed/main.dart'; // Import for AuthWrapper
 import 'sign_up_screen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -96,9 +97,12 @@ class _SignInScreenState extends State<SignInScreen> {
             ),
           );
 
-          // Navigation is handled automatically by AuthWrapper
-          // The StreamBuilder in AuthWrapper will detect the authentication state change
-          // and navigate to HomeScreen automatically
+          // Add manual navigation to force a rebuild of the widget tree
+          // This will trigger the AuthWrapper to check authentication state
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const AuthWrapper()),
+            (route) => false,
+          );
           
         } else {
           // Sign-in failed - show error message

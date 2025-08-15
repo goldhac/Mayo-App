@@ -1,5 +1,6 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth, FirebaseAuthException, User, UserCredential;
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'database_service.dart';
 
 /// AuthService class handles all Firebase Authentication operations
@@ -19,6 +20,9 @@ class AuthService {
 
   // Database service instance
   final DatabaseService _databaseService = DatabaseService();
+  
+  // Firestore instance
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Get the current user
   /// Returns null if no user is signed in
@@ -38,7 +42,7 @@ class AuthService {
   /// - [email]: User's email address
   /// - [password]: User's password (should be at least 8 characters)
   /// - [fullName]: User's full name (will be stored in displayName)
-  /// - [inviteCode]: Optional partner invite code
+  /// - [partnerCode]: Optional partner code
   ///
   /// Returns:
   /// - [AuthResult]: Contains success status and user data or error message
@@ -46,7 +50,7 @@ class AuthService {
     required String email,
     required String password,
     required String fullName,
-    String? inviteCode,
+    String? partnerCode,
   }) async {
     try {
       // Validate input parameters
@@ -81,7 +85,9 @@ class AuthService {
       if (userCredential.user != null) {
         final dbResult = await _databaseService.createUserDocument(
           user: userCredential.user!,
-          inviteCode: inviteCode,
+          name: fullName,
+          nickname: fullName, // Use fullName as nickname by default
+          partnerCode: partnerCode,
         );
 
         if (!dbResult.success) {
@@ -90,51 +96,47 @@ class AuthService {
           }
           // Don't fail the entire sign-up process if database creation fails
         }
-
-        // Update login status
-        await _databaseService.updateUserLoginStatus(
-            userCredential.user!.uid, true);
       }
 
-      if (kDebugMode) {
-        print('User signed up successfully: ${userCredential.user?.email}');
-      }
-
-      String successMessage =
-          'Account created successfully! Please check your email for verification.';
-      if (inviteCode != null && inviteCode.isNotEmpty) {
-        successMessage += ' Partner linking will be processed.';
-      }
-
-      return AuthResult(
-        success: true,
-        message: successMessage,
-        user: userCredential.user,
-      );
-    } on FirebaseAuthException catch (e) {
-      // Handle Firebase Auth specific errors
-      String errorMessage = _getFirebaseErrorMessage(e.code);
-
-      if (kDebugMode) {
-        print('Firebase Auth Error: ${e.code} - ${e.message}');
-      }
-
-      return AuthResult(
-        success: false,
-        message: errorMessage,
-      );
-    } catch (e) {
-      // Handle any other errors
-      if (kDebugMode) {
-        print('Unexpected error during sign up: $e');
-      }
-
-      return AuthResult(
-        success: false,
-        message: 'An unexpected error occurred. Please try again.',
-      );
+    if (kDebugMode) {
+      print('User signed up successfully: ${userCredential.user?.email}');
     }
+
+    String successMessage =
+        'Account created successfully! Please check your email for verification.';
+    if (partnerCode != null && partnerCode.isNotEmpty) {
+      successMessage += ' Partner linking will be processed.';
+    }
+
+    return AuthResult(
+      success: true,
+      message: successMessage,
+      user: userCredential.user,
+    );
+  } on FirebaseAuthException catch (e) {
+    // Handle Firebase Auth specific errors
+    String errorMessage = _getFirebaseErrorMessage(e.code);
+
+    if (kDebugMode) {
+      print('Firebase Auth Error: ${e.code} - ${e.message}');
+    }
+
+    return AuthResult(
+      success: false,
+      message: errorMessage,
+    );
+  } catch (e) {
+    // Handle any other errors
+    if (kDebugMode) {
+      print('Unexpected error during sign up: $e');
+    }
+
+    return AuthResult(
+      success: false,
+      message: 'An unexpected error occurred. Please try again.',
+    );
   }
+}
 
   /// Sign in an existing user with email and password
   ///
@@ -163,12 +165,6 @@ class AuthService {
         email: email.trim(),
         password: password,
       );
-
-      // Update user login status in database
-      if (userCredential.user != null) {
-        await _databaseService.updateUserLoginStatus(
-            userCredential.user!.uid, true);
-      }
 
       if (kDebugMode) {
         print('User signed in successfully: ${userCredential.user?.email}');
@@ -210,12 +206,6 @@ class AuthService {
   /// - [AuthResult]: Contains success status and message
   Future<AuthResult> signOut() async {
     try {
-      // Update user login status in database before signing out
-      final currentUser = _auth.currentUser;
-      if (currentUser != null) {
-        await _databaseService.updateUserLoginStatus(currentUser.uid, false);
-      }
-
       await _auth.signOut();
 
       if (kDebugMode) {
@@ -301,7 +291,80 @@ class AuthService {
           message: 'No user is currently signed in',
         );
       }
+      
+      // Get the user ID before deleting the auth account
+      final String userId = user.uid;
+      
+      // Delete all user-related data from Firestore first
+      try {
+        // 1. Get user data to check for partner relationship
+        final userDoc = await _firestore.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+          final userData = userDoc.data() as Map<String, dynamic>;
+          final partnerId = userData['partnerId'] as String?;
+          
+          // 2. If user has a partner, update partner's data and delete couple management document
+          if (partnerId != null) {
+            // Update partner's document to remove the partnership
+            await _firestore.collection('users').doc(partnerId).update({
+              'partnerId': null,
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+            
+            // Delete couple management document (try both possible IDs)
+            final coupleId1 = '${userId}_$partnerId';
+            final coupleId2 = '${partnerId}_$userId';
+            
+            try {
+              final doc1 = await _firestore.collection('coupleManagement').doc(coupleId1).get();
+              if (doc1.exists) {
+                await _firestore.collection('coupleManagement').doc(coupleId1).delete();
+              } else {
+                final doc2 = await _firestore.collection('coupleManagement').doc(coupleId2).get();
+                if (doc2.exists) {
+                  await _firestore.collection('coupleManagement').doc(coupleId2).delete();
+                }
+              }
+            } catch (e) {
+              if (kDebugMode) {
+                print('Error deleting couple management document: $e');
+              }
+            }
+          }
+        }
+        
+        // 3. Delete user's sessions
+        try {
+          final sessionsQuery = await _firestore.collection('sessions')
+              .where('userId', isEqualTo: userId)
+              .get();
+          
+          for (final doc in sessionsQuery.docs) {
+            await doc.reference.delete();
+          }
+          
+          if (kDebugMode) {
+            print('User sessions deleted successfully: ${sessionsQuery.docs.length} sessions');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('Error deleting user sessions: $e');
+          }
+        }
+        
+        // 4. Finally delete the user document
+        await _firestore.collection('users').doc(userId).delete();
+        if (kDebugMode) {
+          print('User document deleted successfully from Firestore');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error deleting user data from Firestore: $e');
+        }
+        // Continue with account deletion even if Firestore deletion fails
+      }
 
+      // Delete the Firebase Auth account
       await user.delete();
 
       if (kDebugMode) {

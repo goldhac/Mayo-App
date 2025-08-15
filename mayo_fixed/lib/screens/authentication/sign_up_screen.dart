@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mayo_fixed/widgets/full_width_button.dart';
 import 'package:mayo_fixed/widgets/form_widgets.dart';
+import 'package:mayo_fixed/widgets/shimmer_widgets.dart';
 import 'package:mayo_fixed/services/auth_service.dart'; // Import our authentication service
 import 'package:mayo_fixed/utilities/auth_theme.dart'; // Import authentication theme
 import 'sign_in_screen.dart';
@@ -28,7 +29,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
-  final TextEditingController _inviteCodeController = TextEditingController();
+  final TextEditingController _partnerCodeController = TextEditingController();
 
   String? _nameError;
   String? _emailError;
@@ -42,7 +43,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _inviteCodeController.dispose();
+    _partnerCodeController.dispose();
     super.dispose();
   }
 
@@ -121,9 +122,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         email: _emailController.text,
         password: _passwordController.text,
         fullName: _nameController.text,
-        inviteCode: _inviteCodeController.text.trim().isEmpty
+        partnerCode: _partnerCodeController.text.trim().isEmpty
             ? null
-            : _inviteCodeController.text.trim(),
+            : _partnerCodeController.text.trim(),
       );
 
       if (mounted) {
@@ -225,8 +226,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     toggleConfirmPasswordVisibility,
                     _confirmPasswordError),
                 const SizedBox(height: 16.0),
-                buildTextField('Partner Invite Code (Optional)',
-                    'Enter code if you have one', _inviteCodeController, null,
+                buildTextField('Partner Code (Optional)',
+                    'Enter code if you have one', _partnerCodeController, null,
                     isRequired: false),
                 const SizedBox(height: 24.0),
                 Row(
@@ -283,13 +284,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                 // Show loading indicator when signing up
                 if (_isLoading)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 16.0),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
                     child: Center(
-                      child: CircularProgressIndicator(
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.deepPurple),
-                      ),
+                      child: ShimmerLayouts.circularLoader(),
                     ),
                   ),
                 const SizedBox(height: 24.0),

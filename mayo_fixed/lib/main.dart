@@ -4,10 +4,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 // Import our screens and services
 import 'screens/onboarding_screens/onboarding_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/main_navigation_screen.dart';
 import 'screens/authentication/profile_setup_screen.dart';
 import 'services/auth_service.dart';
 import 'services/database_service.dart';
+import 'widgets/shimmer_widgets.dart';
 
 /// Main entry point of the application
 /// Initializes Firebase and starts the app
@@ -17,6 +18,15 @@ void main() async {
 
   // Initialize Firebase for authentication and other services
   await Firebase.initializeApp();
+  
+  // Migrate existing user documents to include required fields for partner linking
+  final DatabaseService databaseService = DatabaseService();
+  try {
+    await databaseService.migrateUserDocuments();
+  } catch (e) {
+    // If migration fails, log the error but continue with app startup
+    print('Error during user document migration: $e');
+  }
 
   // Start the app
   runApp(const MyApp());
@@ -101,26 +111,27 @@ class AuthWrapper extends StatelessWidget {
 }
 
 /// ProfileSetupChecker determines if user needs to complete profile setup
-class ProfileSetupChecker extends StatelessWidget {
+class ProfileSetupChecker extends StatefulWidget {
   final User user;
 
   const ProfileSetupChecker({super.key, required this.user});
 
   @override
-  Widget build(BuildContext context) {
-    final DatabaseService databaseService = DatabaseService();
+  State<ProfileSetupChecker> createState() => _ProfileSetupCheckerState();
+}
 
+class _ProfileSetupCheckerState extends State<ProfileSetupChecker> {
+  @override
+  Widget build(BuildContext context) {
     return FutureBuilder<bool>(
       future: _checkProfileSetupComplete(),
       builder: (context, snapshot) {
         // Show loading while checking profile setup status
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: Colors.black,
             body: Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.deepPurple),
-              ),
+              child: ShimmerLayouts.circularLoader(),
             ),
           );
         }
@@ -129,11 +140,16 @@ class ProfileSetupChecker extends StatelessWidget {
         final isProfileComplete = snapshot.data ?? false;
 
         if (isProfileComplete) {
-          // Profile is complete - show home screen
-          return const HomeScreen();
+          // Profile is complete - show main navigation screen
+          return const MainNavigationScreen();
         } else {
           // Profile setup needed - show profile picture screen
-          return const ProfileSetupScreen();
+          return ProfileSetupScreen(
+            onProfileComplete: () {
+              // Trigger a rebuild when profile setup is completed
+              setState(() {});
+            },
+          );
         }
       },
     );
@@ -144,7 +160,7 @@ class ProfileSetupChecker extends StatelessWidget {
   Future<bool> _checkProfileSetupComplete() async {
     try {
       final DatabaseService databaseService = DatabaseService();
-      final userDoc = await databaseService.getUserData(user.uid);
+      final userDoc = await databaseService.getUserData(widget.user.uid);
 
       if (!userDoc.success || userDoc.data == null) {
         // If user document doesn't exist or failed to fetch, assume setup needed

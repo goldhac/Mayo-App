@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:mayo_fixed/services/database_service.dart';
-import 'package:mayo_fixed/widgets/custom_bottom_navigation.dart';
+
+import 'package:mayo_fixed/widgets/shimmer_widgets.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';  // Added for Timestamp
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
+
 
 /// MoodTrackerScreen - A dedicated screen for tracking and visualizing mood data
 class MoodTrackerScreen extends StatefulWidget {
@@ -44,8 +47,26 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     super.dispose();
   }
 
+  /// Helper method to safely convert timestamp to DateTime
+  DateTime _getDateFromTimestamp(dynamic timestamp) {
+    if (timestamp is Timestamp) {
+      return timestamp.toDate();
+    } else if (timestamp is int) {
+      return DateTime.fromMillisecondsSinceEpoch(timestamp);
+    } else if (timestamp is Map && timestamp.containsKey('_seconds')) {
+      // Handle Firestore timestamp map format
+      final seconds = timestamp['_seconds'] as int;
+      final nanoseconds = timestamp['_nanoseconds'] as int? ?? 0;
+      return DateTime.fromMillisecondsSinceEpoch(seconds * 1000 + nanoseconds ~/ 1000000);
+    } else {
+      // Fallback to current time if timestamp format is unknown
+      return DateTime.now();
+    }
+  }
+
   /// Load mood data from Firebase
   Future<void> _loadMoodData() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
     });
@@ -53,27 +74,49 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     try {
       final userId = _auth.currentUser?.uid;
       if (userId != null) {
-        // Get mood entries from database
-        final moodEntries = await _databaseService.getMoodEntries(userId);
+        // Get mood entries from database using DatabaseResult
+        final result = await _databaseService.getMoodEntries(userId);
+        
+        if (result.success && result.data != null) {
+          final data = result.data as Map<String, dynamic>;
+          final moodEntries = List<Map<String, dynamic>>.from(data['moods'] ?? []);
 
-        // Sort by date (newest first)
-        moodEntries.sort(
-            (a, b) => (b['timestamp'] as int).compareTo(a['timestamp'] as int));
+          // Sort by timestamp (newest first) 
+          moodEntries.sort((a, b) {
+            final aDate = _getDateFromTimestamp(a['timestamp']);
+            final bDate = _getDateFromTimestamp(b['timestamp']);
+            return bDate.compareTo(aDate);
+          });
 
-        // Apply filter
-        final filteredEntries = _filterMoodEntries(moodEntries);
+          // Filter out entries with null mood values
+          final validEntries = moodEntries.where((entry) => entry['mood'] != null).toList();
+          
+          // Apply filter
+          final filteredEntries = _filterMoodEntries(validEntries);
 
-        // Update state
-        setState(() {
-          _moodHistory = filteredEntries;
-          _isLoading = false;
-          _updateChartData(moodEntries);
-        });
+          // Update state
+          if (mounted) {
+            setState(() {
+              _moodHistory = filteredEntries;
+              _isLoading = false;
+              _updateChartData(validEntries);
+            });
+          }
+        } else {
+          if (mounted) {
+            setState(() {
+              _moodHistory = [];
+              _isLoading = false;
+            });
+          }
+        }
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
       // Show error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -92,8 +135,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
 
     return entries.where((entry) {
       // Apply date filter
-      final entryDate =
-          DateTime.fromMillisecondsSinceEpoch(entry['timestamp'] as int);
+      final entryDate = _getDateFromTimestamp(entry['timestamp']);
       bool passesDateFilter = true;
 
       if (_selectedFilter == 'Last 7 Days') {
@@ -111,7 +153,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
       bool passesSearchFilter = true;
       if (searchText.isNotEmpty) {
         final dateStr = DateFormat('MM/dd').format(entryDate).toLowerCase();
-        final note = (entry['note'] as String? ?? '').toLowerCase();
+        final note = (entry['notes'] as String? ?? '').toLowerCase();
         passesSearchFilter =
             dateStr.contains(searchText) || note.contains(searchText);
       }
@@ -133,9 +175,11 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
 
     // Process entries
     for (final entry in entries) {
-      final timestamp = entry['timestamp'] as int;
-      final entryDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
-      final rating = entry['rating'] as int;
+      final entryDate = _getDateFromTimestamp(entry['timestamp']);
+      final rating = entry['mood'] as int?; // Handle null mood values
+      
+      // Skip entries with null mood ratings
+      if (rating == null) continue;
 
       // Only include entries from the last 7 days
       if (entryDate.isAfter(startDate) ||
@@ -157,9 +201,11 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
       }
     }
 
-    setState(() {
-      _weeklyMoodData = weeklyData;
-    });
+    if (mounted) {
+      setState(() {
+        _weeklyMoodData = weeklyData;
+      });
+    }
   }
 
   /// Add a new mood entry
@@ -170,29 +216,30 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
         // Show dialog for adding note
         await _showAddNoteDialog();
 
-        // Create entry
-        final entry = {
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-          'rating': rating,
-          'note': _noteController.text,
-        };
-
-        // Add to database
-        await _databaseService.addMoodEntry(userId, entry);
-
-        // Clear note
-        _noteController.clear();
-
-        // Reload data
-        await _loadMoodData();
-
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Mood entry added successfully!'),
-            backgroundColor: Colors.green,
-          ),
+        // Add to database using saveMoodEntry API
+        final result = await _databaseService.saveMoodEntry(
+          userId: userId,
+          mood: rating,
+          notes: _noteController.text.isNotEmpty ? _noteController.text : null,
         );
+
+        if (result.success) {
+          // Clear note
+          _noteController.clear();
+
+          // Reload data
+          await _loadMoodData();
+
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Mood entry added successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          throw result.message;
+        }
       }
     } catch (e) {
       // Show error
@@ -236,7 +283,10 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
       final userId = _auth.currentUser?.uid;
       if (userId != null) {
         // Get all mood entries
-        final entries = await _databaseService.getMoodEntries(userId);
+        final result = await _databaseService.getMoodEntries(userId);
+        if (!result.success || result.data == null) throw result.message;
+        final data = result.data as Map<String, dynamic>;
+        final entries = List<Map<String, dynamic>>.from(data['moods'] ?? []);
 
         // Convert to CSV
         List<List<dynamic>> csvData = [];
@@ -245,14 +295,16 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
 
         // Add data rows
         for (var entry in entries) {
-          final date =
-              DateTime.fromMillisecondsSinceEpoch(entry['timestamp'] as int);
+          final date = _getDateFromTimestamp(entry['timestamp']);
           final dateStr = DateFormat('MM/dd/yyyy').format(date);
           final timeStr = DateFormat('HH:mm').format(date);
-          final rating = entry['rating'] as int;
-          final moodStr =
-              rating == 1 ? 'Sad' : (rating == 2 ? 'Neutral' : 'Happy');
-          final note = entry['note'] as String? ?? '';
+          final rating = entry['mood'] as int?;
+          
+          // Skip entries with null mood ratings
+          if (rating == null) continue;
+          
+          final moodStr = rating == 1 ? 'Sad' : (rating == 2 ? 'Neutral' : 'Happy');
+          final note = entry['notes'] as String? ?? '';
           csvData.add([dateStr, timeStr, moodStr, note]);
         }
 
@@ -303,11 +355,10 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
       itemCount: _moodHistory.length,
       itemBuilder: (context, index) {
         final entry = _moodHistory[index];
-        final timestamp = entry['timestamp'] as int;
-        final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        final date = _getDateFromTimestamp(entry['timestamp']);
         final dateStr = DateFormat('MM/dd').format(date);
-        final rating = entry['rating'] as int;
-        final note = entry['note'] as String? ?? '';
+        final rating = entry['mood'] as int? ?? 2; // Default to neutral if null
+        final note = entry['notes'] as String? ?? '';
 
         // Determine emoji based on rating
         String emoji;
@@ -463,7 +514,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? ShimmerLayouts.moodTracker()
           : SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -547,7 +598,9 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                             const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onChanged: (value) {
-                        setState(() {});
+                        if (mounted) {
+                          setState(() {});
+                        }
                       },
                     ),
                   ),
@@ -584,19 +637,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                 ],
               ),
             ),
-      bottomNavigationBar: CustomBottomNavigation(
-        currentIndex: 2, // Mood tracker is the 3rd tab
-        onTap: (index) {
-          // Handle navigation
-          if (index != 2) {
-            // Pop current screen first to return to previous screen
-            Navigator.of(context).pop();
-            
-            // Additional navigation logic is handled by the HomeScreen
-            // when we return there, based on the index selected
-          }
-        },
-      ),
+      // Bottom navigation is handled by MainNavigationScreen
     );
   }
 
@@ -759,7 +800,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
           elevation: 0,
           style: const TextStyle(color: Colors.black87, fontSize: 14),
           onChanged: (String? newValue) {
-            if (newValue != null) {
+            if (newValue != null && mounted) {
               setState(() {
                 _selectedFilter = newValue;
                 _loadMoodData();

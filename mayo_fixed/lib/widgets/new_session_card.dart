@@ -81,8 +81,9 @@ class NewSessionCard extends StatelessWidget {
                       // Action button (pill-shaped)
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6B46C1).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16), // Consistent with mood tracker
+                          color: const Color.fromRGBO(107, 70, 193, 0.1),
+                          borderRadius: BorderRadius.circular(
+                              16), // Consistent with mood tracker
                           border: Border.all(color: const Color(0xFF6B46C1)),
                         ),
                         padding: const EdgeInsets.symmetric(

@@ -45,7 +45,8 @@ class SessionHistoryItem extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white,
-                    border: Border.all(color: const Color(0xFF6B46C1).withOpacity(0.3), width: 2),
+                    border: Border.all(
+                        color: const Color(0xFF6B46C1).withAlpha(76), width: 2),
                   ),
                   child: ClipOval(
                     child: isSolo == true

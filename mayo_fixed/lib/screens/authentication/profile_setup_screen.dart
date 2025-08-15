@@ -5,11 +5,12 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/database_service.dart';
 import '../../widgets/full_width_button.dart';
-import '../home_screen.dart';
 import '../../utilities/auth_theme.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
-  const ProfileSetupScreen({super.key});
+  final VoidCallback? onProfileComplete;
+  
+  const ProfileSetupScreen({super.key, this.onProfileComplete});
 
   @override
   State<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
@@ -315,8 +316,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       }
 
       final result = await _databaseService.updateUserProfilePicture(
-        userId: user.uid,
-        profilePictureUrl: profilePictureUrl,
+        user.uid,
+        profilePictureUrl,
       );
 
       if (result.success) {
@@ -359,8 +360,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       }
 
       final result = await _databaseService.updateUserProfilePicture(
-        userId: user.uid,
-        profilePictureUrl: '',
+        user.uid,
+        '',
       );
 
       if (result.success) {
@@ -394,10 +395,20 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   void _navigateToHome() {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-      (route) => false,
-    );
+    // Don't manually navigate - let AuthWrapper handle this automatically
+    // The AuthWrapper will detect the profile setup completion and navigate appropriately
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile setup completed successfully!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      
+      // Notify the parent widget that profile setup is complete
+      widget.onProfileComplete?.call();
+    }
   }
 
   void _showErrorSnackBar(String message) {
